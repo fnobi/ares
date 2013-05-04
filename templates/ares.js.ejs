@@ -1,0 +1,54 @@
+var insertScript = function (element, data) {
+    element.innerHTML = data;
+};
+
+var insertStyle = function (element, data) {
+    var style = document.createElement('style');
+    style.innerHTML = data;
+    style.id = element.id;
+    if (element.type) {
+        style.type = element.type;
+    }
+
+    element.parentNode.appendChild(style);
+    element.parentNode.removeChild(element);
+};
+
+var insertImg = function (element, data) {
+    element.src = data;
+};
+
+(function () {
+    if (!window.WebSocket) {
+        return;
+    }
+
+    var host = window.document.location.host.replace(/:.*/, '');
+    var ws = new WebSocket('ws://' + host + ':3000');
+
+    ws.onmessage = function (event) {
+        var param = JSON.parse(event.data);
+        if (!param.data) {
+            return;
+        }
+
+        var element = document.getElementById(param.id);
+        var tagName = element.tagName.toLowerCase();
+
+        if (tagName == 'script') {
+            insertScript(element, param.data);
+        } else if (tagName == 'link') {
+            insertStyle(element, param.data);
+        } else if (tagName == 'img') {
+            insertImg(element, param.data);
+        }
+    };
+
+    ws.onopen = function () {
+        var resources = <%- resources %>;
+
+        resources.forEach(function (resource) {
+            ws.send(JSON.stringify(resource));
+        });
+    };
+})();
